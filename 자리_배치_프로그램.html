@@ -1,3 +1,4 @@
+<!-- 자리 배치 프로그램 · made by hzuani (github.com/hzuani) -->
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -714,6 +715,22 @@
                 margin-right: 0 !important;
             }
         }
+
+        .credit {
+            position: fixed;
+            bottom: 14px;
+            right: 18px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-quaternary);
+            letter-spacing: -0.1px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @media print {
+            .credit { display: none; }
+        }
     </style>
 </head>
 
@@ -1084,6 +1101,7 @@
         function printStudentView() { document.getElementById('output-area').classList.remove('teacher-view-active'); window.print(); }
         function printTeacherView() { document.getElementById('output-area').classList.add('teacher-view-active'); window.print(); }
     </script>
+    <div class="credit">made by hzuani</div>
 </body>
 
 </html>
