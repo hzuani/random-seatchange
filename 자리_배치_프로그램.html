@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자리 배치 프로그램</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            /* === Toss-inspired color system === */
+            --bg: #f7f8fa;
+            --surface: #ffffff;
+            --surface-hover: #f9fafb;
+            --divider: #f2f4f6;
+            --border: #e5e8eb;
+            --border-strong: #d1d6db;
+
+            --text-primary: #191f28;
+            --text-secondary: #4e5968;
+            --text-tertiary: #8b95a1;
+            --text-quaternary: #b0b8c1;
+
+            --primary: #3182f6;
+            --primary-hover: #1b64da;
+            --primary-light: #e8f3ff;
+
+            --red: #f04452;
+            --red-light: #ffe5e8;
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            background: var(--bg);
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.5;
+            letter-spacing: -0.2px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* === Layout === */
+        .container {
+            display: flex;
+            gap: 24px;
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* === Input panel as card === */
+        .input-area {
+            flex: 0 0 320px;
+            max-height: calc(100vh - 48px);
+            overflow-y: auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .input-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .input-area::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 3px;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            letter-spacing: -0.4px;
+        }
+
+        /* === Form sections (Toss-style grouping) === */
+        .form-section {
+            padding: 20px 0;
+            border-top: 1px solid var(--divider);
+        }
+
+        .form-section:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .form-section:last-of-type {
+            padding-bottom: 0;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 14px;
+        }
+
+        .input-area label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin: 14px 0 6px;
+        }
+
+        .input-area label:first-child {
+            margin-top: 0;
+        }
+
+        /* === Inputs === */
+        .input-area input[type="text"],
+        .input-area input[type="number"] {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.15s ease;
+        }
+
+        .input-area input[type="text"]:hover,
+        .input-area input[type="number"]:hover {
+            background: var(--divider);
+        }
+
+        .input-area input:focus {
+            background: var(--surface);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.15);
+        }
+
+        .input-area input::placeholder {
+            color: var(--text-quaternary);
+            font-weight: 400;
+        }
+
+        .neis-guide {
+            margin: 8px 0 12px;
+            padding: 12px 14px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .neis-guide strong {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        #excelFileInput {
+            width: 100%;
+            margin-top: 4px;
+            padding: 6px 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        #excelStatus {
+            min-height: 18px;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        /* === Buttons === */
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            outline: none;
+        }
+
+        button:focus-visible {
+            box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.25);
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            margin-top: 10px;
+        }
+
+        .primary-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .primary-btn:active {
+            transform: scale(0.98);
+        }
+
+        .primary-btn:disabled {
+            background: var(--border-strong);
+            color: var(--text-tertiary);
+            cursor: not-allowed;
+        }
+
+        .secondary-btn {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg);
+            color: var(--text-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .secondary-btn:hover {
+            background: var(--divider);
+        }
+
+        .secondary-btn:active {
+            transform: scale(0.98);
+        }
+
+        .pill-btn {
+            padding: 8px 16px;
+            background: var(--surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+        }
+
+        .pill-btn:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-strong);
+            color: var(--text-primary);
+        }
+
+        .save-load-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* === Output area === */
+        .output-area {
+            flex: 1;
+            min-width: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px 32px 40px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .class-title {
+            min-height: 44px;
+            margin: 0 0 16px;
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.8px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .class-title:empty::before {
+            content: "자리 배치";
+            color: var(--text-quaternary);
+        }
+
+        .blackboard {
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto 24px;
+            padding: 14px 0;
+            background: var(--text-primary);
+            color: #fff;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 6px;
+            border-radius: var(--radius-md);
+        }
+
+        .chart-layout-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .chart-container {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .print-buttons-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .seating-chart {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        .seating-chart .seat:nth-child(6n + 2),
+        .seating-chart .seat:nth-child(6n + 4) {
+            margin-right: 16px;
+        }
+
+        /* === Seat (Toss-card style) === */
+        .seat {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 2px;
+            min-height: 88px;
+            padding: 12px 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+
+        .seat.occupied {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .seat:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--border-strong);
+        }
+
+        .seat.empty {
+            background: transparent;
+            border: 1.5px dashed var(--border-strong);
+            box-shadow: none;
+            color: var(--text-quaternary);
+        }
+
+        .seat.empty:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: var(--border-strong);
+        }
+
+        .seat.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.18);
+            transform: translateY(-2px);
+        }
+
+        .seat.fixed {
+            border-color: var(--red);
+            box-shadow: 0 0 0 1.5px var(--red);
+        }
+
+        .seat.secret-fixed::after {
+            content: "";
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--text-quaternary);
+        }
+
+        .lock-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            z-index: 10;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--bg);
+            color: var(--text-tertiary);
+            font-size: 10px;
+            font-weight: 700;
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .seat:hover .lock-btn,
+        .seat.fixed .lock-btn {
+            opacity: 1;
+        }
+
+        .seat.fixed .lock-btn {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .seat.empty .lock-btn {
+            display: none;
+        }
+
+        .seat-number {
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+            color: var(--text-tertiary);
+        }
+
+        .seat-name {
+            display: block;
+            width: 100%;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.6px;
+            color: var(--text-primary);
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .seat.no-name .seat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .seat.no-name .seat-name {
+            display: none;
+        }
+
+        /* === Right guide === */
+        .right-guide-area {
+            flex: 0 0 180px;
+        }
+
+        .guide-content {
+            display: none;
+            margin-top: 10px;
+            padding: 16px;
+            background: var(--bg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .guide-content h4 {
+            margin: 0 0 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .guide-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .guide-content li {
+            margin-bottom: 6px;
+            padding-left: 0;
+        }
+
+        .guide-content li:last-child {
+            margin-bottom: 0;
+        }
+
+        .guide-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* === Responsive (작은 화면 대비) === */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .input-area {
+                flex: none;
+                max-height: none;
+                width: 100%;
+            }
+
+            .right-guide-area {
+                flex: none;
+                width: 100%;
+            }
+
+            .chart-layout-wrapper {
+                flex-direction: column;
+            }
+        }
+
+        /* === 인쇄 설정 (원본 그대로) === */
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+
+        @media print {
+
+            .input-area,
+            .print-buttons-container,
+            .lock-btn,
+            .save-load-box,
+            .right-guide-area,
+            .toggle-guide-btn {
+                display: none !important;
+            }
+
+            .seat.secret-fixed::after {
+                display: none !important;
+            }
+
+            .seat:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            html,
+            body {
+                background: #fff;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            .container {
+                padding: 0;
+                max-width: none;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .output-area {
+                width: 100%;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+                border-radius: 0;
+                background: #fff;
+            }
+
+            .chart-layout-wrapper {
+                width: 100%;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .chart-container {
+                width: 100%;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .class-title {
+                text-align: center;
+                flex-shrink: 0;
+            }
+
+            .blackboard {
+                border: 2px solid #ccc;
+                background: #eee !important;
+                color: #333 !important;
+                margin-bottom: 8px;
+                flex-shrink: 0;
+            }
+
+            .seating-chart {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                grid-auto-rows: 1fr;
+                gap: 5px;
+                width: 100%;
+                flex: 1;
+            }
+
+            .seat {
+                border: 1px solid #ccc;
+                width: 100%;
+                min-height: 0;
+                box-shadow: none !important;
+                margin-right: 0 !important;
+            }
+
+            .seat:nth-child(6n + 2),
+            .seat:nth-child(6n + 4) {
+                margin-right: 16px !important;
+            }
+
+            .seat-name {
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+            }
+
+            .seat-number {
+                font-size: 12px;
+            }
+
+            .seat.no-name .seat-number {
+                font-size: 28px;
+                font-weight: 600;
+            }
+
+            .seat.empty {
+                border: 2px dashed #ccc !important;
+            }
+
+            .output-area.teacher-view-active .chart-container {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .output-area.teacher-view-active .class-title {
+                order: 1;
+            }
+
+            .output-area.teacher-view-active .seating-chart {
+                order: 2;
+                display: flex;
+                flex-wrap: wrap-reverse;
+                flex-direction: row-reverse;
+                gap: 6px;
+            }
+
+            .output-area.teacher-view-active .blackboard {
+                order: 3;
+                margin-top: 30px;
+                margin-bottom: 0;
+            }
+
+            .output-area.teacher-view-active .seat {
+                width: calc((100% - 72px) / 6) !important;
+                direction: ltr;
+            }
+
+            .output-area.teacher-view-active .seat:nth-child(6n + 2),
+            .output-area.teacher-view-active .seat:nth-child(6n + 4) {
+                margin-left: 20px !important;
+                margin-right: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="input-area">
+            <h2 class="panel-title">설정</h2>
+
+            <div class="form-section">
+                <label for="classNameInput">학급명</label>
+                <input type="text" id="classNameInput" placeholder="예: 1학년 5반" oninput="updateClassName()">
+            </div>
+
+            <div class="form-section">
+                <div class="section-label">명단 (선택)</div>
+                <div class="neis-guide">
+                    <strong>나이스 파일 받는 법</strong>
+                    [학급담임] → [기본학적관리] → [명렬표출력] → [조회] → [엑셀내려받기]
+                </div>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" onchange="readExcelFile(this)">
+                <div id="excelStatus"></div>
+                <button class="secondary-btn" onclick="clearExcelFile()" style="margin-top: 10px;">파일 삭제 (번호만 사용)</button>
+            </div>
+
+            <div class="form-section">
+                <div class="section-label">배치 옵션</div>
+
+                <label for="totalStudents">총 학생 수 (끝번호)</label>
+                <input type="number" id="totalStudents" placeholder="자동 입력됨">
+
+                <label for="excludeNumbers">제외할 번호</label>
+                <input type="text" id="excludeNumbers" placeholder="예: 5, 12, 23">
+
+                <label for="shuffleCount">섞을 횟수</label>
+                <input type="number" id="shuffleCount" min="1" value="1" placeholder="기본 1회">
+            </div>
+
+            <div class="form-section">
+                <button onclick="arrangeSequential()" class="secondary-btn">번호순 자리 배치</button>
+                <button onclick="runAutoShuffle()" class="primary-btn shuffle-btn">무작위 자리 섞기</button>
+
+                <div class="save-load-box">
+                    <button onclick="saveArrangement()" class="secondary-btn">저장하기</button>
+                    <button onclick="document.getElementById('loadFileInput').click()"
+                        class="secondary-btn">불러오기</button>
+                    <input type="file" id="loadFileInput" accept=".json" style="display: none"
+                        onchange="loadArrangement(this)">
+                </div>
+            </div>
+        </div>
+
+        <div class="output-area" id="output-area">
+            <div class="chart-layout-wrapper">
+                <div class="chart-container">
+                    <h2 id="classNameDisplay" class="class-title"></h2>
+                    <div class="blackboard">칠 판</div>
+
+                    <div class="print-buttons-container">
+                        <button onclick="printStudentView()" class="pill-btn">학생 시점 인쇄</button>
+                        <button onclick="printTeacherView()" class="pill-btn">교사 시점 인쇄</button>
+                    </div>
+
+                    <div id="seating-chart" class="seating-chart"></div>
+                </div>
+
+                <div class="right-guide-area">
+                    <button class="pill-btn toggle-guide-btn" onclick="toggleProgramGuide()" style="width: 100%;">사용법
+                        보기</button>
+                    <div id="programGuide" class="guide-content">
+                        <h4>기본 기능</h4>
+                        <ul>
+                            <li><strong>명단</strong> · 엑셀 업로드 시 이름 표시</li>
+                            <li><strong>순서대로</strong> · 학기 초, 번호순 배치</li>
+                            <li><strong>섞기</strong> · 원하는 횟수만큼 돌리기</li>
+                            <li><strong>고정</strong> · 좌석의 L 버튼 클릭</li>
+                            <li><strong>교환</strong> · 두 자리 클릭 시 맞교환</li>
+                            <li><strong>시크릿 고정</strong> · 우클릭 시 몰래 고정</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedSeat = null;
+        let globalNameList = [];
+        let validExcelNumbers = [];
+
+        function toggleProgramGuide() {
+            const guide = document.getElementById('programGuide');
+            const btn = document.querySelector('.toggle-guide-btn');
+            if (guide.style.display === 'block') { guide.style.display = 'none'; btn.textContent = '사용법 보기'; }
+            else { guide.style.display = 'block'; btn.textContent = '사용법 닫기'; }
+        }
+
+        function updateClassName() {
+            document.getElementById('classNameDisplay').textContent = document.getElementById('classNameInput').value;
+        }
+
+        function readExcelFile(input) {
+            const file = input.files[0];
+            const statusDiv = document.getElementById('excelStatus');
+            const totalInput = document.getElementById('totalStudents');
+
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    globalNameList = []; validExcelNumbers = []; let maxNum = 0;
+                    const headerKeywords = ['이름', '성명', '번호', '학번', '성별', '비고', 'NO', 'NAME', '계'];
+
+                    for (let i = 0; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row.length === 0) continue;
+                        const colC = row[2]; const colD = row[3];
+                        const num = parseInt(colC);
+
+                        if (!isNaN(num) && num > 0) {
+                            validExcelNumbers.push(num);
+                            let name = "";
+                            if (colD) {
+                                const str = String(colD).trim();
+                                if (!headerKeywords.includes(str)) name = str;
+                            }
+                            if (num > globalNameList.length) globalNameList.length = num;
+                            globalNameList[num - 1] = name;
+                            if (num > maxNum) maxNum = num;
+                        }
+                    }
+
+                    if (validExcelNumbers.length > 0) {
+                        statusDiv.textContent = `${validExcelNumbers.length}명의 명단을 불러왔습니다. (최대 ${maxNum}번)`;
+                        statusDiv.style.color = "var(--primary)";
+                        totalInput.value = maxNum;
+                    } else {
+                        statusDiv.textContent = "유효한 명단을 찾지 못했습니다.";
+                        statusDiv.style.color = "var(--red)";
+                    }
+                } catch (error) {
+                    statusDiv.textContent = "파일 읽기 오류"; statusDiv.style.color = "var(--red)";
+                    globalNameList = []; validExcelNumbers = [];
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function clearExcelFile() {
+            document.getElementById('excelFileInput').value = ''; globalNameList = []; validExcelNumbers = [];
+            document.getElementById('excelStatus').textContent = "명단이 삭제되었습니다.";
+            document.getElementById('excelStatus').style.color = "var(--text-secondary)";
+            document.getElementById('totalStudents').value = '';
+        }
+
+        function arrangeSequential() {
+            const totalInput = parseInt(document.getElementById('totalStudents').value) || 0;
+            const excludeStr = document.getElementById('excludeNumbers').value;
+            const excludeSet = new Set(excludeStr.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0));
+
+            let studentList = [];
+            if (validExcelNumbers.length > 0) {
+                studentList = validExcelNumbers.filter(n => !excludeSet.has(n)).sort((a, b) => a - b);
+            } else {
+                for (let i = 1; i <= totalInput; i++) {
+                    if (!excludeSet.has(i)) studentList.push(i);
+                }
+            }
+
+            const requiredSeats = Math.ceil(studentList.length / 6) * 6;
+            const seatingChart = document.getElementById('seating-chart');
+
+            seatingChart.innerHTML = '';
+            selectedSeat = null;
+
+            for (let i = 0; i < requiredSeats; i++) {
+                const newSeat = createSeatElement('', '');
+                seatingChart.appendChild(newSeat);
+            }
+
+            const targetSeats = document.querySelectorAll('.seat');
+            const numEmpties = targetSeats.length - studentList.length;
+            const emptyArray = Array(Math.max(0, numEmpties)).fill('');
+            const contentForSeats = [...studentList, ...emptyArray];
+
+            targetSeats.forEach((seat, i) => {
+                const number = contentForSeats[i];
+                const name = (number !== '' && globalNameList[number - 1]) ? globalNameList[number - 1] : '';
+
+                seat.querySelector('.seat-number').textContent = number;
+                seat.querySelector('.seat-name').textContent = name;
+                updateSeatClass(seat);
+            });
+        }
+
+        async function runAutoShuffle() {
+            const countInput = document.getElementById('shuffleCount');
+            let count = parseInt(countInput.value);
+            if (isNaN(count) || count < 1) count = 1;
+
+            const btn = document.querySelector('.shuffle-btn');
+            const originalText = "무작위 자리 섞기";
+
+            const savedFixedData = [];
+            document.querySelectorAll('.seat.fixed, .seat.secret-fixed').forEach(seat => {
+                savedFixedData.push({ element: seat, num: seat.querySelector('.seat-number').textContent, name: seat.querySelector('.seat-name').textContent });
+            });
+
+            btn.disabled = true;
+
+            for (let i = 1; i <= count; i++) {
+                btn.textContent = `섞는 중... (${i} / ${count})`;
+                shuffleSeats(true);
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            savedFixedData.forEach(data => {
+                data.element.querySelector('.seat-number').textContent = data.num;
+                data.element.querySelector('.seat-name').textContent = data.name;
+                if (data.num !== '') {
+                    data.element.classList.remove('empty'); data.element.classList.add('occupied');
+                    const lock = data.element.querySelector('.lock-btn');
+                    if (lock) lock.style.display = 'block';
+                    if (data.name === '') data.element.classList.add('no-name'); else data.element.classList.remove('no-name');
+                }
+            });
+
+            shuffleSeats(false);
+
+            btn.textContent = originalText; btn.disabled = false;
+        }
+
+        function shuffleSeats(isAnimation = false) {
+            const totalInput = parseInt(document.getElementById('totalStudents').value) || 0;
+            const excludeStr = document.getElementById('excludeNumbers').value;
+            const excludeSet = new Set(excludeStr.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0));
+
+            let studentList = [];
+            if (validExcelNumbers.length > 0) { studentList = validExcelNumbers.filter(n => !excludeSet.has(n)); }
+            else { for (let i = 1; i <= totalInput; i++) { if (!excludeSet.has(i)) studentList.push(i); } }
+
+            const requiredSeats = Math.ceil(studentList.length / 6) * 6;
+            const seatingChart = document.getElementById('seating-chart');
+
+            if (seatingChart.childElementCount !== requiredSeats) {
+                const oldSeats = document.querySelectorAll('.seat');
+                const backupState = [];
+                oldSeats.forEach(seat => { backupState.push({ fixed: seat.classList.contains('fixed'), secret: seat.classList.contains('secret-fixed'), num: seat.querySelector('.seat-number').textContent, name: seat.querySelector('.seat-name').textContent }); });
+
+                seatingChart.innerHTML = ''; selectedSeat = null;
+
+                for (let i = 0; i < requiredSeats; i++) {
+                    let num = '', name = '';
+                    if (i < backupState.length) { num = backupState[i].num; name = backupState[i].name; }
+                    const newSeat = createSeatElement(num, name);
+                    if (i < backupState.length) { if (backupState[i].fixed) newSeat.classList.add('fixed'); if (backupState[i].secret) newSeat.classList.add('secret-fixed'); }
+                    seatingChart.appendChild(newSeat);
+                }
+            }
+
+            let fixedSeatsSelector = '.seat.fixed, .seat.secret-fixed';
+            if (isAnimation) fixedSeatsSelector = '.seat.fixed';
+            const fixedSeats = document.querySelectorAll(fixedSeatsSelector);
+            const fixedStudents = [];
+            fixedSeats.forEach(seat => { const num = seat.querySelector('.seat-number').textContent; if (num) fixedStudents.push(num); });
+
+            const shufflableList = isAnimation ? studentList : studentList.filter(student => !fixedStudents.includes(String(student)));
+
+            for (let i = shufflableList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shufflableList[i], shufflableList[j]] = [shufflableList[j], shufflableList[i]];
+            }
+
+            let targetSeatsSelector = '.seat:not(.fixed):not(.secret-fixed)';
+            if (isAnimation) targetSeatsSelector = '.seat:not(.fixed)';
+            const targetSeats = document.querySelectorAll(targetSeatsSelector);
+
+            const numEmpties = targetSeats.length - shufflableList.length;
+            const emptyArray = Array(Math.max(0, numEmpties)).fill('');
+            const contentForSeats = [...shufflableList, ...emptyArray];
+
+            targetSeats.forEach((seat, i) => {
+                const number = contentForSeats[i];
+                const name = (number !== '' && globalNameList[number - 1]) ? globalNameList[number - 1] : '';
+                seat.querySelector('.seat-number').textContent = number;
+                seat.querySelector('.seat-name').textContent = name;
+                updateSeatClass(seat);
+            });
+        }
+
+        function createSeatElement(number, name) {
+            const newSeat = document.createElement('div'); newSeat.classList.add('seat');
+            const numberSpan = document.createElement('span'); numberSpan.classList.add('seat-number'); numberSpan.textContent = number;
+            const nameSpan = document.createElement('span'); nameSpan.classList.add('seat-name'); nameSpan.textContent = name;
+            const lockBtn = document.createElement('span'); lockBtn.classList.add('lock-btn'); lockBtn.textContent = 'L';
+
+            lockBtn.addEventListener('click', handleLockClick); newSeat.addEventListener('click', handleSeatClick); newSeat.addEventListener('contextmenu', handleRightClick);
+            newSeat.appendChild(numberSpan); newSeat.appendChild(nameSpan); newSeat.appendChild(lockBtn);
+            updateSeatClass(newSeat); return newSeat;
+        }
+
+        function handleLockClick(event) { event.stopPropagation(); const seat = event.currentTarget.parentElement; seat.classList.toggle('fixed'); if (seat.classList.contains('fixed')) { seat.classList.remove('secret-fixed'); } }
+        function handleRightClick(event) { event.preventDefault(); const seat = event.currentTarget; if (seat.classList.contains('empty') || seat.classList.contains('fixed')) return; seat.classList.toggle('secret-fixed'); }
+
+        function handleSeatClick(event) {
+            const clickedSeat = event.currentTarget;
+            if (event.target.classList.contains('lock-btn')) return;
+            if (clickedSeat.classList.contains('fixed') || clickedSeat.classList.contains('secret-fixed')) { if (selectedSeat) { selectedSeat.classList.remove('selected'); selectedSeat = null; } return; }
+
+            if (selectedSeat === null) { selectedSeat = clickedSeat; selectedSeat.classList.add('selected'); }
+            else {
+                if (selectedSeat === clickedSeat) { selectedSeat.classList.remove('selected'); selectedSeat = null; }
+                else {
+                    if (selectedSeat.classList.contains('fixed') || selectedSeat.classList.contains('secret-fixed')) { selectedSeat.classList.remove('selected'); selectedSeat = null; return; }
+                    const numSpan1 = selectedSeat.querySelector('.seat-number'); const nameSpan1 = selectedSeat.querySelector('.seat-name');
+                    const numSpan2 = clickedSeat.querySelector('.seat-number'); const nameSpan2 = clickedSeat.querySelector('.seat-name');
+                    const tempNum = numSpan1.textContent; numSpan1.textContent = numSpan2.textContent; numSpan2.textContent = tempNum;
+                    const tempName = nameSpan1.textContent; nameSpan1.textContent = nameSpan2.textContent; nameSpan2.textContent = tempName;
+                    updateSeatClass(selectedSeat); updateSeatClass(clickedSeat);
+                    selectedSeat.classList.remove('selected'); selectedSeat = null;
+                }
+            }
+        }
+
+        function updateSeatClass(seat) {
+            const number = seat.querySelector('.seat-number').textContent;
+            const nameSpan = seat.querySelector('.seat-name');
+            if (number === '') { seat.classList.add('empty'); seat.classList.remove('occupied'); seat.classList.remove('no-name'); seat.querySelector('.lock-btn').style.display = 'none'; seat.classList.remove('fixed'); seat.classList.remove('secret-fixed'); }
+            else { seat.classList.add('occupied'); seat.classList.remove('empty'); seat.querySelector('.lock-btn').style.display = 'flex'; if (nameSpan.textContent === '') { seat.classList.add('no-name'); } else { seat.classList.remove('no-name'); } }
+        }
+
+        function saveArrangement() {
+            const seats = []; const seatElements = document.querySelectorAll('#seating-chart .seat');
+            if (seatElements.length === 0) { alert("저장할 자리 배치가 없습니다. 먼저 자리를 배치해주세요."); return; }
+            seatElements.forEach(seat => { seats.push({ number: seat.querySelector('.seat-number').textContent, name: seat.querySelector('.seat-name').textContent, isFixed: seat.classList.contains('fixed'), isSecretFixed: seat.classList.contains('secret-fixed') }); });
+            const data = { className: document.getElementById('classNameInput').value, totalStudents: document.getElementById('totalStudents').value, excludeNumbers: document.getElementById('excludeNumbers').value, globalNameList: globalNameList, validExcelNumbers: validExcelNumbers, seats: seats };
+            const jsonStr = JSON.stringify(data, null, 2);
+
+            if (window.showSaveFilePicker) { (async () => { try { const handle = await window.showSaveFilePicker({ suggestedName: (data.className || "자리배치") + ".json", types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] }, }], }); const writable = await handle.createWritable(); await writable.write(jsonStr); await writable.close(); } catch (err) { } })(); }
+            else { let fileName = prompt("저장할 파일 이름을 입력하세요:", (data.className || "자리배치")); if (!fileName) return; if (!fileName.endsWith(".json")) fileName += ".json"; const blob = new Blob([jsonStr], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        }
+
+        function loadArrangement(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    document.getElementById('classNameInput').value = data.className || ""; document.getElementById('totalStudents').value = data.totalStudents || ""; document.getElementById('excludeNumbers').value = data.excludeNumbers || ""; updateClassName();
+                    if (data.globalNameList && data.globalNameList.length > 0) { globalNameList = data.globalNameList; }
+                    if (data.validExcelNumbers) { validExcelNumbers = data.validExcelNumbers; }
+                    if (globalNameList.length > 0) { const statusDiv = document.getElementById('excelStatus'); statusDiv.textContent = `저장된 명단 ${validExcelNumbers.length > 0 ? validExcelNumbers.length : globalNameList.length}명을 불러왔습니다.`; }
+                    const seatingChart = document.getElementById('seating-chart'); seatingChart.innerHTML = ''; selectedSeat = null;
+                    if (data.seats && data.seats.length > 0) { data.seats.forEach(seatData => { const newSeat = createSeatElement(seatData.number, seatData.name); if (seatData.isFixed) newSeat.classList.add('fixed'); if (seatData.isSecretFixed) newSeat.classList.add('secret-fixed'); seatingChart.appendChild(newSeat); }); }
+                    input.value = '';
+                } catch (error) { alert("파일을 불러오는 중 오류가 발생했습니다. 올바른 자리배치 파일인지 확인해주세요."); }
+            };
+            reader.readAsText(file);
+        }
+
+        window.onafterprint = function () { document.getElementById('output-area').classList.remove('teacher-view-active'); }
+        function printStudentView() { document.getElementById('output-area').classList.remove('teacher-view-active'); window.print(); }
+        function printTeacherView() { document.getElementById('output-area').classList.add('teacher-view-active'); window.print(); }
+    </script>
+</body>
+
+</html>
